@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS chat_rooms (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id        UUID REFERENCES events(id) ON DELETE SET NULL,
+  event_id        UUID,
   room_type       VARCHAR(20) NOT NULL DEFAULT 'direct',
   room_name       VARCHAR(200),
   room_photo      VARCHAR(500),

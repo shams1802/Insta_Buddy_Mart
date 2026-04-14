@@ -20,9 +20,16 @@ const BASE_URL = 'http://localhost:3003';
 let passed = 0;
 let failed = 0;
 let authToken = null;
+const metrics = {};
+
+function recordMetric(category, duration) {
+  if (!metrics[category]) metrics[category] = [];
+  metrics[category].push(duration);
+}
 
 function request(method, path, body, headers = {}) {
   return new Promise((resolve, reject) => {
+    const start = Date.now();
     const url = new URL(path, BASE_URL);
     const options = {
       hostname: url.hostname,
@@ -39,10 +46,11 @@ function request(method, path, body, headers = {}) {
       let data = '';
       res.on('data', (chunk) => (data += chunk));
       res.on('end', () => {
+        const duration = Date.now() - start;
         try {
-          resolve({ status: res.statusCode, body: JSON.parse(data) });
+          resolve({ status: res.statusCode, body: JSON.parse(data), duration });
         } catch {
-          resolve({ status: res.statusCode, body: data });
+          resolve({ status: res.statusCode, body: data, duration });
         }
       });
     });
@@ -75,10 +83,14 @@ async function runTests() {
 
   try {
     // ─────────────────────────────────────────────────
-    // Test 1: Health endpoint
+    // Test 1: Health endpoint (Loop 10x for metrics)
     // ─────────────────────────────────────────────────
-    console.log('1. GET /health');
-    const health = await request('GET', '/health');
+    console.log('1. GET /health (10 requests)');
+    let health;
+    for (let i = 0; i < 10; i++) {
+      health = await request('GET', '/health');
+      recordMetric('Health Check', health.duration);
+    }
     assert('Returns 200', health.status === 200);
     assert('Has status: ok', health.body.status === 'ok');
     assert('Has service name', health.body.service === 'iam-service');
@@ -95,6 +107,7 @@ async function runTests() {
       password: 'TestPassword123',
       role: 'runner',
     });
+    recordMetric('Registration (bcrypt)', register.duration);
     assert('Returns 201', register.status === 201);
     assert('Returns user object', !!register.body.user);
     assert('User has id', !!register.body.user?.id);
@@ -112,6 +125,7 @@ async function runTests() {
       password: 'TestPassword123',
       role: 'runner',
     });
+    recordMetric('Registration (Fail)', duplicate.duration);
     assert('Returns 409 for duplicate', duplicate.status === 409);
     assert('Returns CONFLICT code', duplicate.body.error?.code === 'CONFLICT');
 
@@ -123,6 +137,7 @@ async function runTests() {
       email: testEmail,
       password: 'TestPassword123',
     });
+    recordMetric('Login (bcrypt)', login.duration);
     assert('Returns 200', login.status === 200);
     assert('Returns accessToken', !!login.body.accessToken);
     assert('Returns refreshToken', !!login.body.refreshToken);
@@ -227,6 +242,16 @@ async function runTests() {
     console.error(`\n✗ Connection failed: ${error.message}`);
     console.error('Make sure the IAM service is running on port 3003');
     process.exit(1);
+  }
+
+  console.log('\n=== Latency Benchmark Summary ===');
+  console.log('| Operation                  | Average | Min | Max | Samples |');
+  console.log('|----------------------------|---------|-----|-----|---------|');
+  for (const [cat, lats] of Object.entries(metrics)) {
+    const avg = Math.round(lats.reduce((a, b) => a + b, 0) / lats.length);
+    const min = Math.min(...lats);
+    const max = Math.max(...lats);
+    console.log(`| ${cat.padEnd(26)} | ${String(avg).padStart(3)}ms  | ${String(min).padStart(3)} | ${String(max).padStart(3)} | ${String(lats.length).padStart(7)} |`);
   }
 
   console.log(`\n--- Results: ${passed} passed, ${failed} failed ---\n`);

@@ -28,9 +28,16 @@ let passed = 0;
 let failed = 0;
 let authToken = null;
 let createdOrderId = null;
+const metrics = {};
+
+function recordMetric(category, duration) {
+  if (!metrics[category]) metrics[category] = [];
+  metrics[category].push(duration);
+}
 
 function request(baseUrl, method, path, body, headers = {}) {
   return new Promise((resolve, reject) => {
+    const start = Date.now();
     const url = new URL(path, baseUrl);
     const options = {
       hostname: url.hostname,
@@ -47,10 +54,11 @@ function request(baseUrl, method, path, body, headers = {}) {
       let data = '';
       res.on('data', (chunk) => (data += chunk));
       res.on('end', () => {
+        const duration = Date.now() - start;
         try {
-          resolve({ status: res.statusCode, body: JSON.parse(data) });
+          resolve({ status: res.statusCode, body: JSON.parse(data), duration });
         } catch {
-          resolve({ status: res.statusCode, body: data });
+          resolve({ status: res.statusCode, body: data, duration });
         }
       });
     });
@@ -130,10 +138,14 @@ async function runTests() {
 
   try {
     // ─────────────────────────────────────────────────
-    // Test 1: Health endpoint
+    // Test 1: Health endpoint (Loop 10x for metrics)
     // ─────────────────────────────────────────────────
-    console.log('1. GET /health');
-    const health = await request(ORDER_BASE, 'GET', '/health');
+    console.log('1. GET /health (10 requests)');
+    let health;
+    for (let i = 0; i < 10; i++) {
+      health = await request(ORDER_BASE, 'GET', '/health');
+      recordMetric('Health Check', health.duration);
+    }
     assert('Returns 200', health.status === 200);
     assert('Has status: ok', health.body.status === 'ok');
     assert('Has service name', health.body.service === 'order-service');
@@ -176,6 +188,7 @@ async function runTests() {
     const create = await request(ORDER_BASE, 'POST', '/api/v1/orders', sampleOrder, {
       Authorization: `Bearer ${authToken}`,
     });
+    recordMetric('Create Order (Haversine)', create.duration);
     assert('Returns 201', create.status === 201);
     assert('Returns order object', !!create.body.order);
     assert('Order has id', !!create.body.order?.id);
@@ -227,6 +240,7 @@ async function runTests() {
     const listOrders = await request(ORDER_BASE, 'GET', '/api/v1/orders?limit=10&offset=0', null, {
       Authorization: `Bearer ${authToken}`,
     });
+    recordMetric('List Orders', listOrders.duration);
     assert('Returns 200', listOrders.status === 200);
     assert('Has orders array', Array.isArray(listOrders.body.orders));
     assert('Has total count', typeof listOrders.body.total === 'number');
@@ -265,6 +279,16 @@ async function runTests() {
     console.error(`\n✗ Connection failed: ${error.message}`);
     console.error('Make sure the Order Service is running on port 3004');
     process.exit(1);
+  }
+
+  console.log('\n=== Latency Benchmark Summary ===');
+  console.log('| Operation                  | Average | Min | Max | Samples |');
+  console.log('|----------------------------|---------|-----|-----|---------|');
+  for (const [cat, lats] of Object.entries(metrics)) {
+    const avg = Math.round(lats.reduce((a, b) => a + b, 0) / lats.length);
+    const min = Math.min(...lats);
+    const max = Math.max(...lats);
+    console.log(`| ${cat.padEnd(26)} | ${String(avg).padStart(3)}ms  | ${String(min).padStart(3)} | ${String(max).padStart(3)} | ${String(lats.length).padStart(7)} |`);
   }
 
   console.log(`\n--- Results: ${passed} passed, ${failed} failed ---\n`);

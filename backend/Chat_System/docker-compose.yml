@@ -18,7 +18,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - buddyup_network
+      - buddyup_shared_network
 
   redis:
     image: redis:7
@@ -34,7 +34,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - buddyup_network
+      - buddyup_shared_network
 
   app:
     build:
@@ -47,17 +47,20 @@ services:
       redis:
         condition: service_healthy
     env_file: .env
+    environment:
+      DATABASE_URL: postgresql://buddyup:buddyup_dev_123@buddyup_postgres:5432/buddyup_db
+      REDIS_URL: redis://redis:6379
     ports:
       - "3001:3001"
     volumes:
       - ./src:/app/src
     networks:
-      - buddyup_network
+      - buddyup_shared_network
 
 volumes:
   pgdata:
   redisdata:
 
 networks:
-  buddyup_network:
-    driver: bridge
+  buddyup_shared_network:
+    external: true

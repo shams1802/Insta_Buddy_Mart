@@ -79,6 +79,8 @@ Object.entries(services).forEach(([key, service]) => {
       createProxyMiddleware({
         target: service.url,
         changeOrigin: true,
+        // Keep the full API path when proxying (Express mount strips prefix by default).
+        pathRewrite: (path, req) => req.originalUrl,
         // Timeout for upstream connections
         proxyTimeout: 30000,
         timeout: 30000,

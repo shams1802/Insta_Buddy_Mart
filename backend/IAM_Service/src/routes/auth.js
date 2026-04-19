@@ -19,10 +19,15 @@ const {
 router.post('/register', validate(registerSchema), async (req, res, next) => {
   try {
     const user = await authService.registerUser(req.body);
+    
+    // Generate JWT tokens for auto-login after signup
+    const result = await authService.loginUser(user.email, req.body.password);
 
     res.status(201).json({
       message: 'User registered successfully',
       user,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
     });
   } catch (error) {
     // Handle conflict (duplicate email/phone)
@@ -70,7 +75,7 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req, res, next
 // ============================================================================
 router.post('/otp/request', otpLimiter, validate(otpRequestSchema), async (req, res, next) => {
   try {
-    const result = await authService.requestOtp(req.body.email);
+    const result = await authService.requestOtp(req.body.identifier);
 
     res.json({
       message: result.message,
@@ -97,8 +102,8 @@ router.post('/otp/request', otpLimiter, validate(otpRequestSchema), async (req, 
 // ============================================================================
 router.post('/otp/verify', validate(otpVerifySchema), async (req, res, next) => {
   try {
-    const { email, code } = req.body;
-    const result = await authService.verifyOtp(email, code);
+    const { identifier, code } = req.body;
+    const result = await authService.verifyOtp(identifier, code);
 
     res.json({
       message: 'OTP verified successfully',
@@ -152,6 +157,42 @@ router.get('/me', auth, async (req, res, next) => {
     const user = await authService.getUserProfile(req.userId);
 
     res.json({ user });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      });
+    }
+    next(error);
+  }
+});
+
+// ============================================================================
+// PUT /me — Update current user profile (protected)
+// ============================================================================
+router.put('/me', auth, async (req, res, next) => {
+  try {
+    const { fullName, phone, email } = req.body;
+
+    // Validate input
+    if (fullName && fullName.length < 2) {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Full name must be at least 2 characters',
+        },
+      });
+    }
+
+    const user = await authService.updateUserProfile(req.userId, { fullName, phone, email });
+
+    res.json({
+      message: 'Profile updated successfully',
+      user,
+    });
   } catch (error) {
     if (error.statusCode) {
       return res.status(error.statusCode).json({

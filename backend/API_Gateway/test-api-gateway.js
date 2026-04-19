@@ -6,8 +6,9 @@
  */
 
 const http = require('http');
+const { app } = require('./src/app');
 
-const BASE_URL = 'http://localhost:3000';
+let BASE_URL = '';
 let passed = 0;
 let failed = 0;
 
@@ -57,6 +58,12 @@ function assert(testName, condition) {
 async function runTests() {
   console.log('\n=== API Gateway Health Check Tests ===\n');
 
+  const server = await new Promise((resolve) => {
+    const s = app.listen(0, () => resolve(s));
+  });
+  const { port } = server.address();
+  BASE_URL = `http://localhost:${port}`;
+
   try {
     // Test 1: Health endpoint
     console.log('GET /health');
@@ -78,8 +85,8 @@ async function runTests() {
     const authProxy = await request('POST', '/api/v1/auth/login', {});
     // If IAM is running → forwards response; if not → 502
     assert(
-      'Auth route is proxied (200/400/401/502)',
-      [200, 400, 401, 502].includes(authProxy.status)
+      'Auth route is proxied (200/400/401/429/502)',
+      [200, 400, 401, 429, 502].includes(authProxy.status)
     );
 
   } catch (error) {
@@ -88,6 +95,7 @@ async function runTests() {
     process.exit(1);
   }
 
+  await new Promise((resolve) => server.close(resolve));
   console.log(`\n--- Results: ${passed} passed, ${failed} failed ---\n`);
   process.exit(failed > 0 ? 1 : 0);
 }

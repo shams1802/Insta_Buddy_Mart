@@ -12,8 +12,8 @@ services:
     volumes:
       - ./src:/app/src
     networks:
-      - buddyup_network
+      - buddyup_shared_network
 
 networks:
-  buddyup_network:
-    driver: bridge
+  buddyup_shared_network:
+    external: true

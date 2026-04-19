@@ -112,15 +112,15 @@ async function loginUser(email, password) {
  * @param {string} email
  * @returns {Object} - { otpId, expiresAt, message }
  */
-async function requestOtp(email) {
-  // Find user by email
+async function requestOtp(identifier) {
+  // Find user by email or phone
   const userResult = await db.query(
-    'SELECT id, phone FROM users_iam WHERE email = $1',
-    [email]
+    'SELECT id, phone, email FROM users_iam WHERE email = $1 OR phone = $1',
+    [identifier]
   );
 
   if (userResult.rows.length === 0) {
-    const error = new Error('No account found with this email');
+    const error = new Error('No account found with this email or phone');
     error.statusCode = 404;
     error.code = 'USER_NOT_FOUND';
     throw error;
@@ -148,7 +148,7 @@ async function requestOtp(email) {
 
   // In production: send OTP via SMS/email using Twilio/AWS SNS
   // For development, log the OTP to console
-  console.log(`[DEV] OTP for ${email}: ${code} (expires at ${expiresAt.toISOString()})`);
+  console.log(`[DEV] OTP for ${identifier}: ${code} (expires at ${expiresAt.toISOString()})`);
 
   return {
     otpId: otpResult.rows[0].id,
@@ -161,20 +161,20 @@ async function requestOtp(email) {
 
 /**
  * Verify OTP and return JWT tokens
- * @param {string} email
+ * @param {string} identifier
  * @param {string} code
  * @returns {Object} - { user, accessToken, refreshToken }
  */
-async function verifyOtp(email, code) {
+async function verifyOtp(identifier, code) {
   // Find user
   const userResult = await db.query(
     `SELECT id, full_name, email, phone, role, kyc_verified, is_active
-     FROM users_iam WHERE email = $1`,
-    [email]
+     FROM users_iam WHERE email = $1 OR phone = $1`,
+    [identifier]
   );
 
   if (userResult.rows.length === 0) {
-    const error = new Error('No account found with this email');
+    const error = new Error('No account found with this email or phone');
     error.statusCode = 404;
     error.code = 'USER_NOT_FOUND';
     throw error;
@@ -326,6 +326,72 @@ async function getUserProfile(userId) {
   return result.rows[0];
 }
 
+/**
+ * Update user profile
+ * @param {string} userId
+ * @param {Object} updates - { fullName, phone, email }
+ * @returns {Object} updated user profile
+ */
+async function updateUserProfile(userId, updates) {
+  const { fullName, phone, email } = updates;
+
+  // Build dynamic update query
+  const updateFields = ['updated_at = NOW()'];
+  const params = [userId];
+
+  if (fullName) {
+    params.push(fullName);
+    updateFields.push(`full_name = $${params.length}`);
+  }
+
+  if (phone) {
+    // Check if phone already exists for another user
+    const existing = await db.query(
+      'SELECT id FROM users_iam WHERE phone = $1 AND id != $2',
+      [phone, userId]
+    );
+    if (existing.rows.length > 0) {
+      const error = new Error('Phone number already registered');
+      error.statusCode = 409;
+      error.code = 'PHONE_CONFLICT';
+      throw error;
+    }
+    params.push(phone);
+    updateFields.push(`phone = $${params.length}`);
+  }
+
+  if (email) {
+    const existingEmail = await db.query(
+      'SELECT id FROM users_iam WHERE email = $1 AND id != $2',
+      [email, userId]
+    );
+    if (existingEmail.rows.length > 0) {
+      const error = new Error('Email already registered');
+      error.statusCode = 409;
+      error.code = 'EMAIL_CONFLICT';
+      throw error;
+    }
+    params.push(email);
+    updateFields.push(`email = $${params.length}`);
+  }
+
+  const result = await db.query(
+    `UPDATE users_iam SET ${updateFields.join(', ')}
+     WHERE id = $1
+     RETURNING id, full_name, email, phone, role, kyc_verified, is_active, created_at, updated_at`,
+    params
+  );
+
+  if (result.rows.length === 0) {
+    const error = new Error('User not found');
+    error.statusCode = 404;
+    error.code = 'USER_NOT_FOUND';
+    throw error;
+  }
+
+  return result.rows[0];
+}
+
 module.exports = {
   registerUser,
   loginUser,
@@ -333,4 +399,5 @@ module.exports = {
   verifyOtp,
   refreshAccessToken,
   getUserProfile,
+  updateUserProfile,
 };

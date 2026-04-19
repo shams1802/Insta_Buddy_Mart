@@ -1,0 +1,5 @@
+Error response from daemon: remove chat_system_pgdata: volume is in use - [c3992ac7717435210c391989b836b3776f46c1e4a73950871ac497f81e44cc86]
+Error response from daemon: remove chat_system_redisdata: volume is in use - [15f9d5281dafc82753f1f04734e989e691155f2a21887374545c6881ae79d633]
+Error response from daemon: remove payment_service_payment_pgdata: volume is in use - [98a7f493c28c35877ddbce212765fddf53b3068a1e38297fe732dfe722bf1dbe]
+Error response from daemon: remove order_service_order_pgdata: volume is in use - [c51e7fa3fcf1de8fae7272ca80353c496b28ed28d1c3406e1f4fd98fae898c1e]
+Error response from daemon: remove iam_service_iam_pgdata: volume is in use - [f6b808a45732226103ba81d691180eaf63c7a379350b0f814dc9b08838b788d2]

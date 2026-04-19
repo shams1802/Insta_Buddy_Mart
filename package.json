@@ -1,0 +1,28 @@
+{
+  "name": "insta-buddy-mart",
+  "version": "1.0.0",
+  "description": "BuddyUp - P2P Marketplace with Flutter Frontend and Node.js Backend",
+  "private": true,
+  "scripts": {
+    "start:backend": "cd backend && node start-all-services.js",
+    "start:iam": "cd backend/IAM_Service && docker compose up --build",
+    "start:order": "cd backend/Order_Service && docker compose up --build",
+    "start:payment": "cd backend/Payment_Service && docker compose up --build",
+    "start:chat": "cd backend/Chat_System && docker compose up --build",
+    "start:gateway": "cd backend/API_Gateway && docker compose up --build",
+    "stop:all": "docker compose -f backend/IAM_Service/docker-compose.yml -f backend/Order_Service/docker-compose.yml -f backend/Payment_Service/docker-compose.yml -f backend/Chat_System/docker-compose.yml down -v",
+    "logs:iam": "docker logs -f buddyup_iam",
+    "logs:order": "docker logs -f buddyup_order",
+    "logs:payment": "docker logs -f buddyup_payment",
+    "logs:chat": "docker logs -f buddyup_chat",
+    "logs:gateway": "docker logs -f buddyup_gateway",
+    "test:all": "cd backend && node test-runner.js --all",
+    "test:iam": "cd backend && node test-runner.js --iam",
+    "test:order": "cd backend && node test-runner.js --order",
+    "status": "docker ps --filter 'label=service=buddyup' --format 'table {{.Names}}\\t{{.Status}}\\t{{.Ports}}'",
+    "clean": "docker system prune -a --volumes"
+  },
+  "keywords": ["marketplace", "flutter", "nodejs", "microservices"],
+  "author": "BuddyUp Team",
+  "license": "MIT"
+}

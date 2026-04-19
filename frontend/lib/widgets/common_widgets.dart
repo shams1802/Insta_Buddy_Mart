@@ -65,7 +65,7 @@ class GradientButton extends StatefulWidget {
     required this.label,
     this.icon,
     required this.onPressed,
-    this.colors = const [Color(0xFF6C5CE7), Color(0xFFA29BFE)],
+    this.colors = const [Color(0xFF7C3AED), Color(0xA78BFA)],
     this.isLoading = false,
   });
 
@@ -281,13 +281,13 @@ class _OrbPainter extends CustomPainter {
     final paint = Paint()..style = PaintingStyle.fill;
 
     // Purple orb
-    paint.color = const Color(0xFF6C5CE7).withValues(alpha: 0.15);
+    paint.color = const Color(0xFF7C3AED).withValues(alpha: 0.15);
     final orb1X = size.width * 0.2 + math.sin(progress * 2 * math.pi) * 30;
     final orb1Y = size.height * 0.3 + math.cos(progress * 2 * math.pi) * 40;
     canvas.drawCircle(Offset(orb1X, orb1Y), 100, paint);
 
-    // Teal orb
-    paint.color = const Color(0xFF00CEC9).withValues(alpha: 0.1);
+    // Cyan orb
+    paint.color = const Color(0xFF06B6D4).withValues(alpha: 0.1);
     final orb2X =
         size.width * 0.8 + math.cos(progress * 2 * math.pi + 1) * 25;
     final orb2Y =
@@ -295,7 +295,7 @@ class _OrbPainter extends CustomPainter {
     canvas.drawCircle(Offset(orb2X, orb2Y), 80, paint);
 
     // Coral orb
-    paint.color = const Color(0xFFFF6B6B).withValues(alpha: 0.08);
+    paint.color = const Color(0xFFFF6B35).withValues(alpha: 0.08);
     final orb3X =
         size.width * 0.5 + math.sin(progress * 2 * math.pi + 2) * 20;
     final orb3Y =
@@ -376,26 +376,34 @@ class _ProductCardState extends State<ProductCard>
         },
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(20),
             color: Colors.white.withValues(alpha: 0.06),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
+              color: Colors.white.withValues(alpha: 0.12),
+              width: 1.5,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withValues(alpha: 0.15),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Product image placeholder
+              // Product image placeholder with enhanced gradient
               Container(
-                height: 120,
+                height: 130,
                 decoration: BoxDecoration(
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(18),
+                    top: Radius.circular(20),
                   ),
                   gradient: LinearGradient(
                     colors: [
-                      widget.color.withValues(alpha: 0.2),
-                      widget.color.withValues(alpha: 0.05),
+                      widget.color.withValues(alpha: 0.25),
+                      widget.color.withValues(alpha: 0.08),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -404,13 +412,13 @@ class _ProductCardState extends State<ProductCard>
                 child: Center(
                   child: Icon(
                     widget.icon,
-                    size: 48,
-                    color: widget.color.withValues(alpha: 0.8),
+                    size: 56,
+                    color: widget.color,
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -418,42 +426,64 @@ class _ProductCardState extends State<ProductCard>
                       widget.name,
                       style: const TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         color: Colors.white,
+                        letterSpacing: 0.3,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       'by ${widget.seller}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          widget.price,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: widget.color,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Price',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.white.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            Text(
+                              widget.price,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: widget.color,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
                         ),
                         Container(
-                          padding: const EdgeInsets.all(6),
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: widget.color.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
+                            gradient: LinearGradient(
+                              colors: [
+                                widget.color.withValues(alpha: 0.25),
+                                widget.color.withValues(alpha: 0.15),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
                             Icons.add_shopping_cart_rounded,
                             color: widget.color,
-                            size: 18,
+                            size: 20,
                           ),
                         ),
                       ],

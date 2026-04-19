@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cmd /c \"cd d:\\\\Software\\\\Insta_Buddy_Mart\\\\backend\\\\IAM_Service && npm start\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

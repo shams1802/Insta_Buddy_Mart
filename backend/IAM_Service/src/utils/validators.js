@@ -33,17 +33,22 @@ const loginSchema = Joi.object({
 /**
  * Validate OTP request payload
  */
+const identifierSchema = Joi.alternatives().try(
+  Joi.string().email().messages({ 'string.email': 'Please provide a valid email address' }),
+  Joi.string().pattern(/^[6-9]\d{9}$/).messages({
+    'string.pattern.base': 'Please provide a valid 10-digit Indian phone number',
+  })
+).required().messages({ 'any.required': 'Email or phone number is required' });
+
 const otpRequestSchema = Joi.object({
-  email: Joi.string().email().required()
-    .messages({ 'string.email': 'Please provide a valid email address' }),
+  identifier: identifierSchema,
 });
 
 /**
  * Validate OTP verification payload
  */
 const otpVerifySchema = Joi.object({
-  email: Joi.string().email().required()
-    .messages({ 'string.email': 'Please provide a valid email address' }),
+  identifier: identifierSchema,
   code: Joi.string().length(6).pattern(/^\d{6}$/).required()
     .messages({
       'string.length': 'OTP must be exactly 6 digits',

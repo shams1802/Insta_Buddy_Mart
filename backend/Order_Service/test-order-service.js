@@ -21,6 +21,10 @@
  */
 
 const http = require('http');
+const jwt = require('jsonwebtoken');
+require('dotenv').config({
+  path: require('path').resolve(__dirname, '.env'),
+});
 
 const ORDER_BASE = 'http://localhost:3004';
 const IAM_BASE = 'http://localhost:3003';
@@ -120,9 +124,16 @@ async function getAuthToken() {
     console.warn('  ⚠ Could not get auth token from IAM Service. Using mock token.');
   }
 
-  // Fallback: create a mock JWT if IAM Service is not running
-  // This will only work if JWT_SECRET matches
-  return null;
+  // Fallback: issue a local JWT signed with Order service secret.
+  // This keeps Order integration tests fully runnable even if IAM is down/throttled.
+  const secret = process.env.JWT_SECRET;
+  if (!secret) return null;
+  const userId = '11111111-1111-4111-8111-111111111111';
+  return jwt.sign(
+    { userId, email: 'order-local-test@example.com', role: 'requester', kycVerified: true },
+    secret,
+    { expiresIn: '1h' }
+  );
 }
 
 async function runTests() {

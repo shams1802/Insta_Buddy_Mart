@@ -106,6 +106,31 @@ router.patch(
   validate(updateOrderStatusSchema),
   async (req, res, next) => {
     try {
+      // Check if this is an order acceptance (status = ACCEPTED)
+      if (req.body.status === 'ACCEPTED') {
+        // Verify user is a runner (check from JWT claims via API Gateway)
+        const userRole = req.userRole || req.body.userRole;
+        if (userRole !== 'runner') {
+          return res.status(403).json({
+            error: {
+              code: 'NOT_RUNNER',
+              message: 'Only runners can accept orders. Please complete KYC to become a runner.',
+            },
+          });
+        }
+        
+        // Check KYC verification
+        const kycVerified = req.kycVerified !== false; // Default true if not specified
+        if (!kycVerified) {
+          return res.status(403).json({
+            error: {
+              code: 'KYC_REQUIRED',
+              message: 'KYC verification is required to accept orders.',
+            },
+          });
+        }
+      }
+      
       const { status, runnerId } = req.body;
       const order = await orderService.updateOrderStatus(
         req.params.id,

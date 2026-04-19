@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/auth_provider.dart';
 import 'services/chat_provider.dart';
 import 'services/order_provider.dart';
+import 'services/cart_provider.dart';
+import 'services/theme_mode_provider.dart';
+import 'screens/auth_gate.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Set preferred orientation
+
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  
-  // Set system UI overlay style for dark mode
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -30,9 +29,11 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ThemeModeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
       child: const InstaBuddyMartApp(),
     ),
@@ -44,18 +45,14 @@ class InstaBuddyMartApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = context.watch<ThemeModeProvider>().mode;
     return MaterialApp(
       title: 'Insta Buddy Mart',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      home: Consumer<AuthProvider>(
-        builder: (context, auth, _) {
-          if (auth.isAuthenticated) {
-            return const HomeScreen();
-          }
-          return const LoginScreen();
-        },
-      ),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
+      home: const AuthGate(),
     );
   }
 }

@@ -18,7 +18,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - buddyup_network
+      - buddyup_shared_network
 
   payment-service:
     build:
@@ -29,12 +29,14 @@ services:
       postgres:
         condition: service_healthy
     env_file: .env
+    environment:
+      DATABASE_URL: postgresql://buddyup:buddyup_dev_123@buddyup_payment_postgres:5432/buddyup_payment_db
     ports:
       - "3002:3002"
     volumes:
       - ./src:/app/src
     networks:
-      - buddyup_network
+      - buddyup_shared_network
 
   payment-worker:
     build:
@@ -46,15 +48,17 @@ services:
       postgres:
         condition: service_healthy
     env_file: .env
+    environment:
+      DATABASE_URL: postgresql://buddyup:buddyup_dev_123@buddyup_payment_postgres:5432/buddyup_payment_db
     volumes:
       - ./src:/app/src
     networks:
-      - buddyup_network
+      - buddyup_shared_network
 
 volumes:
   payment_pgdata:
 
 networks:
-  buddyup_network:
-    driver: bridge
+  buddyup_shared_network:
+    external: true
 
